@@ -9,7 +9,7 @@ int main() {
 
   // INITIALIZE-------------------------------------------------------------
   sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
-  std::vector<Shape *> shapes = readConfig("../assets/config.txt", &window);
+  std::vector<Shape *> shapes = readConfig("assets/config.txt", &window);
   // INITIALIZE-------------------------------------------------------------
 
   // MAIN GAME LOOP
