@@ -2,25 +2,26 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 int main() {
-  // INITIALIZE
+  // INITIALIZE-----------------------------------------------
   sf::RenderWindow window(sf::VideoMode(800, 600), "RPG Game");
-  // INITIALIZE
+  sf::CircleShape shape(50.0f);
+  // INITIALIZE-----------------------------------------------
 
   // MAIN GAME LOOP
   while (window.isOpen()) {
 
-    // UPDATE
+    // UPDATE-----------------------------------------------
     sf::Event event;
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed) {
         window.close();
       }
     }
-    // UPDATE
+    // UPDATE-----------------------------------------------
 
-    // DRAW
-    window.clear(sf::Color::Yellow);
+    // DRAW-----------------------------------------------
+    window.draw(shape);
     window.display();
-    // DRAW
+    // DRAW-----------------------------------------------
   }
 }
