@@ -4,13 +4,17 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
+#include <filesystem>
 #include <vector>
 
 int main() {
 
   // INITIALIZE-------------------------------------------------------------
   sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
-  std::vector<Shape *> shapes = readConfig("assets/config.txt", &window);
+  std::string configPath =
+      std::filesystem::current_path().parent_path().string() +
+      "/assets/config.txt";
+  std::vector<Shape *> shapes = readConfig(configPath, &window);
   sf::Clock clock;
   // INITIALIZE-------------------------------------------------------------
 
