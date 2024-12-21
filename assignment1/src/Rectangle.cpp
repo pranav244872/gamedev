@@ -1,4 +1,5 @@
 #include "../include/Rectangle.h"
+#include <SFML/System/Vector2.hpp>
 
 // Constructor definition
 Rectangle::Rectangle(sf::RenderWindow *window, std::string name, float init_x,
@@ -20,4 +21,17 @@ void Rectangle::info() {
             << " Speed: (" << speed_x << ", " << speed_y << ")"
             << " Color: (" << Rcol << ", " << Gcol << ", " << Bcol << ")"
             << " Dimensions: " << length << " x " << breadth << std::endl;
+}
+
+void Rectangle::update() {
+  const sf::Vector2f currentPos = rectangle.getPosition();
+
+  if ((currentPos.x + length) > window->getSize().x || currentPos.x < 0) {
+    speed_x = -speed_x;
+  }
+  if ((currentPos.y + breadth) > window->getSize().y || currentPos.y < 0) {
+    speed_y = -speed_y;
+  }
+
+  rectangle.setPosition(currentPos.x + speed_x, currentPos.y + speed_y);
 }

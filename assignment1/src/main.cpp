@@ -2,6 +2,7 @@
 #include "../include/Shape.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 #include <vector>
 
@@ -10,6 +11,7 @@ int main() {
   // INITIALIZE-------------------------------------------------------------
   sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
   std::vector<Shape *> shapes = readConfig("assets/config.txt", &window);
+  sf::Clock clock;
   // INITIALIZE-------------------------------------------------------------
 
   // Print details of all shapes
@@ -21,6 +23,9 @@ int main() {
   // MAIN GAME LOOP
   while (window.isOpen()) {
 
+    // Get the elapsed time since the last frame
+    sf::Time deltaTime = clock.restart();
+
     // UPDATE---------------------------------------------------------------
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -30,14 +35,24 @@ int main() {
         window.close();
       }
     }
+
+    for (Shape *shape : shapes) {
+      shape->update(); // Update speed for each shape
+    }
     // UPDATE---------------------------------------------------------------
 
     // DRAW-----------------------------------------------------------------
+    window.clear(); // Clear the window before drawing again
+
     for (Shape *shape : shapes) {
-      shape->draw();
+      shape->draw(); // Draw Each shape
     }
-    window.display();
+
+    window.display(); // Display the updated window
     // DRAW-----------------------------------------------------------------
+
+    // Control the frame rate to be around 60 fps (16ms per frame)
+    sf::sleep(sf::milliseconds(16) - deltaTime); // Sleep for the remaining time
   }
 
   // CLEANUP----------------------------------------------------------------

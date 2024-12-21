@@ -27,6 +27,7 @@ public:
   // Overriding the draw method from Shape class to draw the circle
   void draw() override;
   void info() override;
+  void update() override;
 };
 
 #endif // RECTANGLE_H

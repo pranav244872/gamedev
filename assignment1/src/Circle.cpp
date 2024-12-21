@@ -22,3 +22,19 @@ void Circle::info() {
             << " Color: (" << Rcol << ", " << Gcol << ", " << Bcol << ")"
             << " Radius: " << radius << std::endl;
 }
+
+void Circle::update() {
+  // Get the current position of the circle
+  sf::Vector2f currentPos = circle.getPosition();
+
+  // Check for collisions with window boundaries and reverse speed
+  if ((currentPos.x + 2 * radius) > window->getSize().x || currentPos.x < 0) {
+    speed_x = -speed_x;
+  }
+  if ((currentPos.y + 2 * radius) > window->getSize().y || currentPos.y < 0) {
+    speed_y = -speed_y;
+  }
+
+  // Update the position of the circle
+  circle.setPosition(currentPos.x + speed_x, currentPos.y + speed_y);
+}
