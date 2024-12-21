@@ -14,3 +14,11 @@ Circle::Circle(sf::RenderWindow *window, std::string name, float init_x,
 
 // Draw method to render the circle onto the window
 void Circle::draw() { window->draw(circle); }
+
+void Circle::info() {
+  std::cout << "Circle: " << name << " Position: (" << init_x << ", " << init_y
+            << ")"
+            << " Speed: (" << speed_x << ", " << speed_y << ")"
+            << " Color: (" << Rcol << ", " << Gcol << ", " << Bcol << ")"
+            << " Radius: " << radius << std::endl;
+}

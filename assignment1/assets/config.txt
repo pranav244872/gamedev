@@ -1,2 +1,4 @@
 Circle CGreen 100 100 -0.03 0.02 0 225 0 50  
 Circle CBlue 200 200 0.02 0.04 0 0 225 100  
+Rectangle RRed 200 200 0.1 0.15 225 0 0 250 25  
+Rectangle RGrey 300 250 -0.02 0.02 100 100 100 50 100  

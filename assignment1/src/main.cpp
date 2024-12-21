@@ -12,6 +12,12 @@ int main() {
   std::vector<Shape *> shapes = readConfig("assets/config.txt", &window);
   // INITIALIZE-------------------------------------------------------------
 
+  // Print details of all shapes
+  std::cout << "Shapes read from config:" << std::endl;
+  for (Shape *shape : shapes) {
+    shape->info(); // Call the info method for each shape
+  }
+
   // MAIN GAME LOOP
   while (window.isOpen()) {
 

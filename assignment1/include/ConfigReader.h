@@ -2,6 +2,7 @@
 #define CONFIGREADER_H
 
 #include "Circle.h"
+#include "Rectangle.h"
 #include "Shape.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <fstream>
