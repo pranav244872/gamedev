@@ -1,0 +1,24 @@
+# Ignore compiled files
+*.o
+*.a
+*.so
+MyGame
+
+# Ignore build directories
+bin/
+obj/
+
+# Ignore temporary files (e.g., vim swap files)
+*.swp
+
+# Ignore editor-specific files or IDE folders
+.vscode/
+.idea/
+
+# Ignore log files
+*.log
+
+# Ignore system files
+.DS_Store    # macOS system file
+Thumbs.db     # Windows system file
+
