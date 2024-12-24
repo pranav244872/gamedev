@@ -4,8 +4,8 @@
 #include <string>
 #undef string
 
+class EntityManager;
 class Entity {
-  friend class EntityManager;
 
   bool m_active = true;
   size_t m_id = 0;
@@ -13,6 +13,9 @@ class Entity {
 
   // constructor and destructor
   Entity(const size_t id, const std::string &tag);
+
+  // Friend class
+  friend class EntityManager;
 
 public:
   // component pointers
@@ -26,6 +29,6 @@ public:
   // private member access functions
   bool isActive() const;
   const std::string &tag() const;
-  const size_t id() const;
+  size_t id() const;
   void destroy();
 };

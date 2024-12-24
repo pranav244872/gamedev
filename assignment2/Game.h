@@ -6,6 +6,12 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 
+#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/VideoMode.hpp>
+
+#include <fstream>
+#include <iostream>
+
 struct PlayerConfig {
   int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
   float S;
@@ -24,7 +30,7 @@ class Game {
   EntityManager m_entities;  // vector of entities to maintain
   sf::Font m_font;           // the font we will use to draw
   sf::Text m_text;           // the score text to be drawin to the screen
-  PlayerConfig m_playerCOnfig;
+  PlayerConfig m_playerConfig;
   EnemyConfig m_enemyConfig;
   BulletConfig m_bulletConfig;
   int m_score = 0;

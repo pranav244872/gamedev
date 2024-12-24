@@ -7,6 +7,6 @@ bool Entity::isActive() const { return m_active; }
 
 void Entity::destroy() { m_active = false; }
 
-const size_t Entity::id() const { return m_id; }
+size_t Entity::id() const { return m_id; }
 
 const std::string &Entity::tag() const { return m_tag; }

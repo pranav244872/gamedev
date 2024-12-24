@@ -1,11 +1,11 @@
 #include "EntityManager.h"
 
 void EntityManager::update() {
-  // TODO: add entities from m_entitiesToAdd to the proper locations
-  // - add them to the vector of all entities
-  // - add them to the vector inside the map, with the tage as a key
   for (auto e : m_entitiesToAdd) {
+    // - add them to the vector of all entities
     m_entities.push_back(e);
+    // - add them to the vector inside the map, with the tage as a key
+    m_entityMap[e->tag()].push_back(e);
   }
 
   // remove dead enties from the vector of all entities
@@ -19,12 +19,18 @@ void EntityManager::update() {
 }
 
 void EntityManager::removeDeadEntities(EntityVec &vec) {
-  // TODO: remove all dead entities from the input vecot
+  // remove all dead entities from the input vector
   // this is called by the update() function
+  // Use erase-remove idiom to remove dead entities
+  vec.erase(std::remove_if(vec.begin(), vec.end(),
+                           [](const std::shared_ptr<Entity> &e) {
+                             return !e->isActive();
+                           }),
+            vec.end());
 }
 
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string &tag) {
-  auto entity = std::make_shared<Entity>(new Entity(m_totalEntities++, tag));
+  auto entity = std::shared_ptr<Entity>(new Entity(m_totalEntities++, tag));
   m_entitiesToAdd.push_back(entity);
   return entity;
 }
