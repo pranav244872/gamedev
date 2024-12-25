@@ -16,9 +16,9 @@ public:
 class CShape {
 public:
   sf::CircleShape circle;
-  CShape(float radius, int points, const sf::Color &fill,
+  CShape(float radius, int vertices, const sf::Color &fill,
          const sf::Color &outline, const float thickness)
-      : circle(radius, points) {
+      : circle(radius, vertices) {
     circle.setFillColor(fill);
     circle.setOutlineColor(outline);
     circle.setOutlineThickness(thickness);

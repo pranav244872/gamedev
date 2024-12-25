@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "Component.h"
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Window/VideoMode.hpp>
 #include <fstream>
@@ -28,10 +29,12 @@ void Game::init(const std::string &path) {
 
   if (!file.is_open()) {
     std::cerr << "Could not open the config files" << std::endl;
+    return;
   }
 
   std::string line;
   int resolution_x, resolution_y, framerate;
+
   while (std::getline(file, line)) {
     std::stringstream ss(line);
     std::string firstWord;
@@ -43,23 +46,71 @@ void Game::init(const std::string &path) {
     // When the first word is Window assign resolutions;
     if (firstWord == "Window") {
       ss >> resolution_x >> resolution_y >> framerate;
+      std::cerr << "Window Config: " << "Resolution: " << resolution_x << "x"
+                << resolution_y << ", Framerate: " << framerate << std::endl;
+
       // When the first word is Player fill the player Config
     } else if (firstWord == "Player") {
       ss >> m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >>
           m_playerConfig.FR >> m_playerConfig.FG >> m_playerConfig.FB >>
           m_playerConfig.OR >> m_playerConfig.OG >> m_playerConfig.OB >>
           m_playerConfig.OT >> m_playerConfig.V;
+
+      std::cerr << "Player Config: "
+                << "SR: " << m_playerConfig.SR << ", "
+                << "CR: " << m_playerConfig.CR << ", "
+                << "Speed: " << m_playerConfig.S << ", "
+                << "Fill Color: (" << m_playerConfig.FR << ", "
+                << m_playerConfig.FG << ", " << m_playerConfig.FB << "), "
+                << "Outline Color: (" << m_playerConfig.OR << ", "
+                << m_playerConfig.OG << ", " << m_playerConfig.OB << ", "
+                << m_playerConfig.OT << "), "
+                << "Vertices: " << m_playerConfig.V << std::endl;
+
       // When the first word is Font set font to read
     } else if (firstWord == "Font") {
       std::string font;
       ss >> font;
       m_font.loadFromFile(font);
+      std::cerr << "Font Config: " << font << std::endl;
+
       // When the first word is Enemy fill the player Config;
     } else if (firstWord == "Enemy") {
       ss >> m_enemyConfig.SR >> m_enemyConfig.CR >> m_enemyConfig.SMIN >>
           m_enemyConfig.SMAX >> m_enemyConfig.OR >> m_enemyConfig.OG >>
           m_enemyConfig.OB >> m_enemyConfig.OT >> m_enemyConfig.VMIN >>
           m_enemyConfig.VMAX >> m_enemyConfig.L >> m_enemyConfig.SI;
+
+      std::cerr << "Enemy Config: "
+                << "SR: " << m_enemyConfig.SR << ", "
+                << "CR: " << m_enemyConfig.CR << ", "
+                << "Speed Range: (" << m_enemyConfig.SMIN << ", "
+                << m_enemyConfig.SMAX << "), "
+                << "Outline Color: (" << m_enemyConfig.OR << ", "
+                << m_enemyConfig.OG << ", " << m_enemyConfig.OB << ", "
+                << m_enemyConfig.OT << "), "
+                << "Vertices Range: (" << m_enemyConfig.VMIN << ", "
+                << m_enemyConfig.VMAX << "), "
+                << "Lifespan: " << m_enemyConfig.L << ", "
+                << "Spawn Interval: " << m_enemyConfig.SI << std::endl;
+
+    } else if (firstWord == "Bullet") {
+      ss >> m_bulletConfig.SR >> m_bulletConfig.CR >> m_bulletConfig.S >>
+          m_bulletConfig.FR >> m_bulletConfig.FG >> m_bulletConfig.FB >>
+          m_bulletConfig.OR >> m_bulletConfig.OG >> m_bulletConfig.OB >>
+          m_bulletConfig.OT >> m_bulletConfig.V >> m_bulletConfig.L;
+
+      std::cerr << "Bullet Config: "
+                << "SR: " << m_bulletConfig.SR << ", "
+                << "CR: " << m_bulletConfig.CR << ", "
+                << "Speed: " << m_bulletConfig.S << ", "
+                << "Fill Color: (" << m_bulletConfig.FR << ", "
+                << m_bulletConfig.FG << ", " << m_bulletConfig.FB << "), "
+                << "Outline Color: (" << m_bulletConfig.OR << ", "
+                << m_bulletConfig.OG << ", " << m_bulletConfig.OB << ", "
+                << m_bulletConfig.OT << "), "
+                << "Vertices: " << m_bulletConfig.V << ", "
+                << "Lifespan: " << m_bulletConfig.L << std::endl;
     }
   }
 
@@ -171,15 +222,18 @@ void Game::sUserInput() {
   }
 }
 
-void Game::sLifespan() {
-  // TODO: implement all lifespan functionality
-}
+void Game::sLifespan() {}
 
 void Game::sRender() {
   // TODO:: change the code below to draw ALL of the entiteis
   // sample drawing of the player Entity tthat we have created
   m_window.clear();
 
+  for (auto e : m_entities.getEntitiesByTag("bullet")) {
+    e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+    e->cShape->circle.setRotation(e->cTransform->angle);
+    m_window.draw(e->cShape->circle);
+  }
   // set the position of the shape based on the entity's transform->pos
   m_player->cShape->circle.setPosition(m_player->cTransform->pos.x,
                                        m_player->cTransform->pos.y);
@@ -267,6 +321,8 @@ void Game::spawnEnemy() {
       m_enemyConfig.OT             // outline thickness
   );
 
+  enemy->cScore = std::make_shared<CScore>(randomSides);
+  enemy->cCollision = std::make_shared<CCollision>(m_enemyConfig.CR);
   // Record the spawn time of the most recent enemy
   m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -282,10 +338,29 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity) {
 }
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
-  // TODO: implement the spawning of a bullet which travels towards target
-  // - bullet speed is given as a scalar speed
-  // - you must set the velocity using formula in notes
+  // Create a new bullet entity
   auto bullet = m_entities.addEntity("bullet");
+
+  // Calculate the velocity vector from the player to the target
+  Vec2 direction = target - m_player->cTransform->pos;
+  direction.normalize();
+  Vec2 velocity = direction * m_bulletConfig.S;
+
+  // Initialize the bullet's transform component with the player's position
+  bullet->cTransform =
+      std::make_shared<CTransform>(target, // Starting position (same as player)
+                                   Vec2(0, 0), // Velocity towards target
+                                   0           // Initial angle
+      );
+
+  bullet->cShape = std::make_shared<CShape>(
+      m_bulletConfig.SR, m_bulletConfig.V,
+      sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
+      sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB),
+      m_bulletConfig.OT);
+
+  bullet->cLifespan = std::make_shared<CLifespan>(m_bulletConfig.L);
+  bullet->cCollision = std::make_shared<CCollision>(m_bulletConfig.CR);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity) {
