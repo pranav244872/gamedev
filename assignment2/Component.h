@@ -15,12 +15,17 @@ public:
 
 class CShape {
 public:
+  int vertices;
   sf::CircleShape circle;
+  sf::Color fillColor;    // Fill color with transparency
+  sf::Color outlineColor; // Outline color with transparency
+
   CShape(float radius, int vertices, const sf::Color &fill,
          const sf::Color &outline, const float thickness)
-      : circle(radius, vertices) {
-    circle.setFillColor(fill);
-    circle.setOutlineColor(outline);
+      : vertices(vertices), circle(radius, vertices), fillColor(fill),
+        outlineColor(outline) {
+    circle.setFillColor(fillColor);
+    circle.setOutlineColor(outlineColor);
     circle.setOutlineThickness(thickness);
     circle.setOrigin(radius, radius);
   }

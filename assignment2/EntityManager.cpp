@@ -7,6 +7,8 @@ void EntityManager::update() {
     // - add them to the vector inside the map, with the tage as a key
     m_entityMap[e->tag()].push_back(e);
   }
+  // Clear the entities-to-add buffer to avoid duplication
+  m_entitiesToAdd.clear();
 
   // remove dead enties from the vector of all entities
   removeDeadEntities(m_entities);

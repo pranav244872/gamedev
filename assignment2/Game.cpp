@@ -3,6 +3,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Window/VideoMode.hpp>
+#include <cmath>
 #include <fstream>
 #include <memory>
 #include <random>
@@ -72,6 +73,10 @@ void Game::init(const std::string &path) {
       std::string font;
       ss >> font;
       m_font.loadFromFile(font);
+      m_text.setFont(m_font);
+      m_text.setFillColor(sf::Color::White);
+      m_text.setPosition(10, 10);
+      m_text.setCharacterSize(20);
       std::cerr << "Font Config: " << font << std::endl;
 
       // When the first word is Enemy fill the player Config;
@@ -120,49 +125,33 @@ void Game::init(const std::string &path) {
   spawnPlayer();
 }
 
-void Game::setPaused(bool paused) {
-  // TODO
-}
-
 void Game::sMovement() {
-  //  TODO: implement all entity movement in this function
-  //  you should read the m_player->cInput component to determine if the player
-  //  is moving
-  if (m_player->cInput->up && m_player->cInput->left) {
-    // Move diagonally up-left
-    m_player->cTransform->pos += Vec2(-m_playerConfig.S, -m_playerConfig.S);
-  } else if (m_player->cInput->up && m_player->cInput->right) {
-    // Move diagonally up-right
-    m_player->cTransform->pos += Vec2(m_playerConfig.S, -m_playerConfig.S);
-  } else if (m_player->cInput->down && m_player->cInput->left) {
-    // Move diagonally down-left
-    m_player->cTransform->pos += Vec2(-m_playerConfig.S, m_playerConfig.S);
-  } else if (m_player->cInput->down && m_player->cInput->right) {
-    // Move diagonally down-right
-    m_player->cTransform->pos += Vec2(m_playerConfig.S, m_playerConfig.S);
-  } else if (m_player->cInput->up) {
-    // Move up
-    m_player->cTransform->pos.y -= m_playerConfig.S;
-  } else if (m_player->cInput->down) {
-    // Move down
-    m_player->cTransform->pos.y += m_playerConfig.S;
-  } else if (m_player->cInput->left) {
-    // Move left
-    m_player->cTransform->pos.x -= m_playerConfig.S;
-  } else if (m_player->cInput->right) {
-    // Move right
-    m_player->cTransform->pos.x += m_playerConfig.S;
-  } else {
-    // Do nothing
+  for (auto e : m_entities.getEntities()) {
+    if (e->tag() == "player") {
+      if (e->cInput->up && e->cInput->left) {
+        e->cTransform->pos += Vec2(-m_playerConfig.S, -m_playerConfig.S);
+      } else if (e->cInput->up && e->cInput->right) {
+        e->cTransform->pos += Vec2(m_playerConfig.S, -m_playerConfig.S);
+      } else if (e->cInput->down && e->cInput->left) {
+        e->cTransform->pos += Vec2(-m_playerConfig.S, m_playerConfig.S);
+      } else if (e->cInput->down && e->cInput->right) {
+        e->cTransform->pos += Vec2(m_playerConfig.S, m_playerConfig.S);
+      } else if (e->cInput->up) {
+        e->cTransform->pos.y -= m_playerConfig.S;
+      } else if (e->cInput->down) {
+        e->cTransform->pos.y += m_playerConfig.S;
+      } else if (e->cInput->left) {
+        e->cTransform->pos.x -= m_playerConfig.S;
+      } else if (e->cInput->right) {
+        e->cTransform->pos.x += m_playerConfig.S;
+      }
+    } else {
+      e->cTransform->pos += e->cTransform->velocity;
+    }
   }
 }
 
 void Game::sUserInput() {
-  // TODO:: handle user input here
-  // note that you should only be setting the player's input component variable
-  // here you should not implement the player;rs movement logic here the
-  // movement system will read the variables you set in this function
-
   sf::Event event;
   while (m_window.pollEvent(event)) {
     // this event triggers when the window is closed
@@ -205,6 +194,9 @@ void Game::sUserInput() {
       case sf::Keyboard::D:
         m_player->cInput->right = false;
         break;
+      case sf::Keyboard::P:   // "P" key to pause/unpause
+        m_paused = !m_paused; // Toggle the paused state
+        break;
       default:
         break;
       }
@@ -222,28 +214,63 @@ void Game::sUserInput() {
   }
 }
 
-void Game::sLifespan() {}
+void Game::sLifespan() {
+  for (auto e : m_entities.getEntities()) {
+    if (e->cLifespan) {
+      if (e->cLifespan->remaining == 0) {
+        e->destroy();
+      } else {
+        e->cLifespan->remaining -= 1;
+      }
+    }
+  }
+}
 
 void Game::sRender() {
-  // TODO:: change the code below to draw ALL of the entiteis
-  // sample drawing of the player Entity tthat we have created
   m_window.clear();
 
-  for (auto e : m_entities.getEntitiesByTag("bullet")) {
+  for (auto e : m_entities.getEntities()) {
+    // Set the position of the shape
     e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
+
+    // Update rotation based on angle
+    e->cTransform->angle += 1.0f;
+
+    // If the entity has a lifespan component, handle transparency
+    if (e->cLifespan) {
+      // Calculate the remaining lifespan
+      float remainingLifespan = static_cast<float>(e->cLifespan->remaining);
+      float totalLifespan = static_cast<float>(e->cLifespan->total);
+
+      // Calculate alpha based on the remaining lifespan (fade out)
+      float alpha = std::max(0.0f, remainingLifespan / totalLifespan) * 255;
+
+      // Set the alpha value for transparency on the fill color
+      e->cShape->fillColor.a = static_cast<sf::Uint8>(alpha);
+      e->cShape->circle.setFillColor(e->cShape->fillColor);
+
+      // Set the alpha value for transparency on the outline color
+      e->cShape->outlineColor.a = static_cast<sf::Uint8>(alpha);
+      e->cShape->circle.setOutlineColor(e->cShape->outlineColor);
+    }
+
+    // Apply rotation to the shape
     e->cShape->circle.setRotation(e->cTransform->angle);
+
+    // Draw the shape to the window
     m_window.draw(e->cShape->circle);
   }
-  // set the position of the shape based on the entity's transform->pos
-  m_player->cShape->circle.setPosition(m_player->cTransform->pos.x,
-                                       m_player->cTransform->pos.y);
-  // set the rotation of the shape based on the entity's transform->angle
-  m_player->cTransform->angle += 1.0f;
-  m_player->cShape->circle.setRotation(m_player->cTransform->angle);
+  m_text.setString(std::to_string(m_score));
+  if (m_paused) {
+    sf::Text paused("Paused", m_font, 50);
+    paused.setStyle(sf::Text::Bold);
+    paused.setFillColor(sf::Color::White);
+    paused.setPosition((float)m_window.getSize().x / 2 - 50,
+                       (float)m_window.getSize().y / 2 - 50);
+    m_window.draw(paused);
+  }
 
-  // draw the entity's sf::CircleShape
-  m_window.draw(m_player->cShape->circle);
-
+  m_window.draw(m_text);
   m_window.display();
 }
 
@@ -256,8 +283,100 @@ void Game::sEnemySpawner() {
 }
 
 void Game::sCollision() {
-  // TODO: implement all proper collisions between entities
-  // be sure to use the collision radius, Not the shape radius
+  // Check for border collisions
+  for (auto e : m_entities.getEntities()) {
+    const auto &pos = e->cTransform->pos;
+    const float radius = e->cCollision->radius;
+    const sf::Vector2u &windowSize = m_window.getSize();
+
+    // Handle player border collisions
+    if (e->tag() == "player") {
+      // Check right border
+      if ((pos.x + radius) > windowSize.x) {
+        e->cInput->right = false;
+      }
+      // Check bottom border
+      if ((pos.y + radius) > windowSize.y) {
+        e->cInput->down = false;
+      }
+      // Check left border
+      if ((pos.x - radius) < 0) {
+        e->cInput->left = false;
+      }
+      // Check top border
+      if ((pos.y - radius) < 0) {
+        e->cInput->up = false;
+      }
+    } else {
+      // Handle border collisions for other entities (e.g., bullets, enemies)
+      // Check right/left borders
+      if ((pos.x + radius) > windowSize.x || (pos.x - radius) < 0) {
+        e->cTransform->velocity.x = -e->cTransform->velocity.x;
+      }
+
+      // Check bottom/top borders
+      if ((pos.y + radius) > windowSize.y || (pos.y - radius) < 0) {
+        e->cTransform->velocity.y = -e->cTransform->velocity.y;
+      }
+    }
+  }
+
+  // Check for entity collisions (bullet vs. enemy)
+  for (auto e : m_entities.getEntitiesByTag("enemy")) {
+    const auto &ePos = e->cTransform->pos;
+    for (auto b : m_entities.getEntitiesByTag("bullet")) {
+      const auto &bPos = b->cTransform->pos;
+
+      // Check if the bullet and enemy collide using distance squared to avoid
+      // sqrt calculation
+      float dx = bPos.x - ePos.x;
+      float dy = bPos.y - ePos.y;
+      float distanceSquared = dx * dx + dy * dy;
+
+      float combinedRadius = b->cCollision->radius + e->cCollision->radius;
+      if (distanceSquared <= combinedRadius * combinedRadius) {
+        b->destroy();
+        spawnSmallEnemies(e);
+        m_score += e->cScore->score;
+        e->destroy();
+      }
+    }
+    // Check if the enemy collides with the player
+    const auto &playerPos = m_player->cTransform->pos;
+    float playerDx = ePos.x - playerPos.x;
+    float playerDy = ePos.y - playerPos.y;
+    float playerDistanceSquared = playerDx * playerDx + playerDy * playerDy;
+
+    float playerCombinedRadius =
+        e->cCollision->radius + m_player->cCollision->radius;
+    if (playerDistanceSquared <= playerCombinedRadius * playerCombinedRadius) {
+      // Handle the collision between the player and the enemy
+      m_player
+          ->destroy(); // Example of player destruction, you can customize it
+      spawnPlayer();
+    }
+  }
+  // Repeat for "smallEnemy"
+  for (auto e : m_entities.getEntitiesByTag("smallEnemy")) {
+    // Process small enemy (similar to "enemy")
+    const auto &ePos = e->cTransform->pos;
+    // Check for bullet collision (bullet vs. small enemy)
+    for (auto b : m_entities.getEntitiesByTag("bullet")) {
+      const auto &bPos = b->cTransform->pos;
+
+      // Check if the bullet and small enemy collide
+      float dx = bPos.x - ePos.x;
+      float dy = bPos.y - ePos.y;
+      float distanceSquared = dx * dx + dy * dy;
+
+      float combinedRadius = b->cCollision->radius + e->cCollision->radius;
+      if (distanceSquared <= combinedRadius * combinedRadius) {
+        b->destroy();
+        m_score += e->cScore->score;
+        e->destroy();
+      }
+    }
+  }
 }
 
 void Game::spawnPlayer() {
@@ -282,7 +401,7 @@ void Game::spawnPlayer() {
 
   // Add the input component
   entity->cInput = std::make_shared<CInput>();
-
+  entity->cCollision = std::make_shared<CCollision>(m_playerConfig.CR);
   // Set this entity as the player in the game
   m_player = entity;
 }
@@ -328,13 +447,52 @@ void Game::spawnEnemy() {
 }
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> entity) {
-  // TODO: spawn small enemies at the location of the input enemy else {
-  // when we create the smaller enemy, we have to read the values of the
-  // original enemy
-  // - spawn a number of small enemies equal to the vertices of the original
-  // enemy
-  // - set each small enemy to the same color as the original, half the size
-  // - small enemies are worth double points of the original enemy
+  const auto &mainPos = entity->cTransform->pos;
+  float mainAngle = entity->cTransform->angle;
+  const auto &mainVelocity = entity->cTransform->velocity;
+
+  // Get the number of vertices (used as the number of smaller enemies to spawn)
+  int numVertices = entity->cShape->circle.getPointCount();
+
+  // Size of the smaller enemies (smaller than the main enemy)
+  float smallerEnemySize = 0.50 * m_enemyConfig.SR;
+
+  // Spawn each smaller enemy
+  for (int i = 0; i < numVertices; i++) {
+    // Calculate the direction of angle for each smaller enemy
+    float angleOffset = mainAngle + (i * 360.0f / numVertices);
+
+    // Calculate the direction based on the angle of the smaller enemy
+    Vec2 direction;
+    direction.x = std::cos(angleOffset * M_PI / 180.0f);
+    direction.y = std::sin(angleOffset * M_PI / 180.0f);
+
+    // Normalize the direction vector
+    direction.normalize();
+
+    // Now, scale the direction of the magitude of the main entity's velocity
+    direction *= mainVelocity.length();
+
+    // Create the smaller enemy entity
+    auto smallerEnemy = m_entities.addEntity("smallEnemy");
+
+    // Initialize the smaller enemy's transform component
+    smallerEnemy->cTransform =
+        std::make_shared<CTransform>(mainPos, direction, 0);
+
+    // Initialize the smaller enemy's shape with smaller size
+    smallerEnemy->cShape = std::make_shared<CShape>(
+        smallerEnemySize, numVertices, entity->cShape->fillColor,
+        entity->cShape->outlineColor, m_enemyConfig.OT);
+
+    // Initialize the Lifespan component
+    smallerEnemy->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+
+    // Initialize the cScore component
+    smallerEnemy->cScore = std::make_shared<CScore>(numVertices * 2);
+
+    smallerEnemy->cCollision = std::make_shared<CCollision>(m_enemyConfig.SR);
+  }
 }
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
@@ -342,16 +500,13 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
   auto bullet = m_entities.addEntity("bullet");
 
   // Calculate the velocity vector from the player to the target
-  Vec2 direction = target - m_player->cTransform->pos;
+  Vec2 direction = entity->cTransform->pos - target;
   direction.normalize();
   Vec2 velocity = direction * m_bulletConfig.S;
 
   // Initialize the bullet's transform component with the player's position
-  bullet->cTransform =
-      std::make_shared<CTransform>(target, // Starting position (same as player)
-                                   Vec2(0, 0), // Velocity towards target
-                                   0           // Initial angle
-      );
+  bullet->cTransform = std::make_shared<CTransform>(
+      Vec2(entity->cTransform->pos.x, entity->cTransform->pos.y), velocity, 0);
 
   bullet->cShape = std::make_shared<CShape>(
       m_bulletConfig.SR, m_bulletConfig.V,
@@ -363,21 +518,24 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
   bullet->cCollision = std::make_shared<CCollision>(m_bulletConfig.CR);
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity) {
-  // TODO: implement your onw special weapon spawning here
-}
 void Game::run() {
   // TODO: add pause functionality in here
   // some systems should function while paused(rendering)
   // some systems shouldn't (movement/input)
   while (m_running) {
-    m_entities.update();
 
+    sLifespan();
     sEnemySpawner();
-    sMovement();
-    sCollision();
     sUserInput();
     sRender();
+
+    if (m_paused) {
+      continue;
+    }
+
+    sCollision();
+    m_entities.update();
+    sMovement();
 
     // increment the current frame
     // may need to be moved when pause implemented
