@@ -72,9 +72,9 @@ This assignment involves creating a game with specific mechanics and features. F
 ```plaintext
 Window 1280 720 60 0
 Font fonts/tech.ttf 24 255 255 255
-Player 32 32 5 255 0 0 4 8
-Enemy 32 32 3 3 255 255 255 8 12 60 90
-Bullet 10 10 20 255 255 255 4 20 90
+Player 32 32 5 50 50 50 255 0 0 4 8
+Enemy 32 32 3 5 255 255 255 4 3 7 60 90
+Bullet 10 10 15 255 255 0 255 255 255 2 10 120
 ```
 
 ### **Structure**

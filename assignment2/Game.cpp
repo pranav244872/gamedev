@@ -1,13 +1,7 @@
 #include "Game.h"
 #include "Component.h"
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/Font.hpp>
-#include <SFML/Window/VideoMode.hpp>
-#include <cmath>
-#include <fstream>
-#include <memory>
-#include <random>
-#include <sstream>
+#include "GameFunctions/ConfigLoader.h"
+#include "GameFunctions/MovementSystem.h"
 
 int generateRandom(int A, int B) {
   // Create a random device and random number generator
@@ -22,100 +16,35 @@ int generateRandom(int A, int B) {
 
 Game::Game(const std::string &config) { init(config); }
 
+// Load window configuration
 void Game::init(const std::string &path) {
-  // read in config file here
-  // use the premade PlayerConfig, EnemyConfig, BulletConfig variables
-  // set up default window parameters
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    std::cerr << "Could not open the config files" << std::endl;
+    std::cerr << "Could not open the config file: " << path << std::endl;
     return;
   }
 
   std::string line;
-  int resolution_x, resolution_y, framerate;
+  int resolution_x = 800, resolution_y = 600, framerate = 60;
 
   while (std::getline(file, line)) {
     std::stringstream ss(line);
     std::string firstWord;
 
-    // Skip empty lines or lines that fail to provide the firstWord
     if (!(ss >> firstWord))
       continue;
 
-    // When the first word is Window assign resolutions;
     if (firstWord == "Window") {
-      ss >> resolution_x >> resolution_y >> framerate;
-      std::cerr << "Window Config: " << "Resolution: " << resolution_x << "x"
-                << resolution_y << ", Framerate: " << framerate << std::endl;
-
-      // When the first word is Player fill the player Config
+      loadWindowConfig(ss, resolution_x, resolution_y, framerate);
     } else if (firstWord == "Player") {
-      ss >> m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >>
-          m_playerConfig.FR >> m_playerConfig.FG >> m_playerConfig.FB >>
-          m_playerConfig.OR >> m_playerConfig.OG >> m_playerConfig.OB >>
-          m_playerConfig.OT >> m_playerConfig.V;
-
-      std::cerr << "Player Config: "
-                << "SR: " << m_playerConfig.SR << ", "
-                << "CR: " << m_playerConfig.CR << ", "
-                << "Speed: " << m_playerConfig.S << ", "
-                << "Fill Color: (" << m_playerConfig.FR << ", "
-                << m_playerConfig.FG << ", " << m_playerConfig.FB << "), "
-                << "Outline Color: (" << m_playerConfig.OR << ", "
-                << m_playerConfig.OG << ", " << m_playerConfig.OB << ", "
-                << m_playerConfig.OT << "), "
-                << "Vertices: " << m_playerConfig.V << std::endl;
-
-      // When the first word is Font set font to read
+      loadPlayerConfig(ss, m_playerConfig);
     } else if (firstWord == "Font") {
-      std::string font;
-      ss >> font;
-      m_font.loadFromFile(font);
-      m_text.setFont(m_font);
-      m_text.setFillColor(sf::Color::White);
-      m_text.setPosition(10, 10);
-      m_text.setCharacterSize(20);
-      std::cerr << "Font Config: " << font << std::endl;
-
-      // When the first word is Enemy fill the player Config;
+      loadFontConfig(ss, m_font, m_text);
     } else if (firstWord == "Enemy") {
-      ss >> m_enemyConfig.SR >> m_enemyConfig.CR >> m_enemyConfig.SMIN >>
-          m_enemyConfig.SMAX >> m_enemyConfig.OR >> m_enemyConfig.OG >>
-          m_enemyConfig.OB >> m_enemyConfig.OT >> m_enemyConfig.VMIN >>
-          m_enemyConfig.VMAX >> m_enemyConfig.L >> m_enemyConfig.SI;
-
-      std::cerr << "Enemy Config: "
-                << "SR: " << m_enemyConfig.SR << ", "
-                << "CR: " << m_enemyConfig.CR << ", "
-                << "Speed Range: (" << m_enemyConfig.SMIN << ", "
-                << m_enemyConfig.SMAX << "), "
-                << "Outline Color: (" << m_enemyConfig.OR << ", "
-                << m_enemyConfig.OG << ", " << m_enemyConfig.OB << ", "
-                << m_enemyConfig.OT << "), "
-                << "Vertices Range: (" << m_enemyConfig.VMIN << ", "
-                << m_enemyConfig.VMAX << "), "
-                << "Lifespan: " << m_enemyConfig.L << ", "
-                << "Spawn Interval: " << m_enemyConfig.SI << std::endl;
-
+      loadEnemyConfig(ss, m_enemyConfig);
     } else if (firstWord == "Bullet") {
-      ss >> m_bulletConfig.SR >> m_bulletConfig.CR >> m_bulletConfig.S >>
-          m_bulletConfig.FR >> m_bulletConfig.FG >> m_bulletConfig.FB >>
-          m_bulletConfig.OR >> m_bulletConfig.OG >> m_bulletConfig.OB >>
-          m_bulletConfig.OT >> m_bulletConfig.V >> m_bulletConfig.L;
-
-      std::cerr << "Bullet Config: "
-                << "SR: " << m_bulletConfig.SR << ", "
-                << "CR: " << m_bulletConfig.CR << ", "
-                << "Speed: " << m_bulletConfig.S << ", "
-                << "Fill Color: (" << m_bulletConfig.FR << ", "
-                << m_bulletConfig.FG << ", " << m_bulletConfig.FB << "), "
-                << "Outline Color: (" << m_bulletConfig.OR << ", "
-                << m_bulletConfig.OG << ", " << m_bulletConfig.OB << ", "
-                << m_bulletConfig.OT << "), "
-                << "Vertices: " << m_bulletConfig.V << ", "
-                << "Lifespan: " << m_bulletConfig.L << std::endl;
+      loadBulletConfig(ss, m_bulletConfig);
     }
   }
 
@@ -125,28 +54,13 @@ void Game::init(const std::string &path) {
   spawnPlayer();
 }
 
+// Use the external functions for movement logic
 void Game::sMovement() {
   for (auto e : m_entities.getEntities()) {
     if (e->tag() == "player") {
-      if (e->cInput->up && e->cInput->left) {
-        e->cTransform->pos += Vec2(-m_playerConfig.S, -m_playerConfig.S);
-      } else if (e->cInput->up && e->cInput->right) {
-        e->cTransform->pos += Vec2(m_playerConfig.S, -m_playerConfig.S);
-      } else if (e->cInput->down && e->cInput->left) {
-        e->cTransform->pos += Vec2(-m_playerConfig.S, m_playerConfig.S);
-      } else if (e->cInput->down && e->cInput->right) {
-        e->cTransform->pos += Vec2(m_playerConfig.S, m_playerConfig.S);
-      } else if (e->cInput->up) {
-        e->cTransform->pos.y -= m_playerConfig.S;
-      } else if (e->cInput->down) {
-        e->cTransform->pos.y += m_playerConfig.S;
-      } else if (e->cInput->left) {
-        e->cTransform->pos.x -= m_playerConfig.S;
-      } else if (e->cInput->right) {
-        e->cTransform->pos.x += m_playerConfig.S;
-      }
+      processPlayerMovement(e, m_playerConfig.S);
     } else {
-      e->cTransform->pos += e->cTransform->velocity;
+      processNonPlayerMovement(e);
     }
   }
 }

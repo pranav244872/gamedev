@@ -2,15 +2,13 @@
 
 #include "Entity.h"
 #include "EntityManager.h"
-
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
-
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/VideoMode.hpp>
-
-#include <fstream>
-#include <iostream>
+#include <cmath>
+#include <random>
 
 struct PlayerConfig {
   int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
